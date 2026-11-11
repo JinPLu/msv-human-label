@@ -77,7 +77,7 @@ body.finished .stage,body.finished .deck{display:none} body.finished .done{displ
 </footer>
 <div class="rule"><p id="rule"></p><p>按 <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 打标并跳到下一题 · <kbd>空格</kbd> 片段重播 · <kbd>←</kbd><kbd>→</kbd> 前后翻 · <kbd>[</kbd><kbd>]</kbd> 换组 · <kbd>⌫</kbd> 清除本题</p></div>
 <script>
-const DATA_FILE = "data-4ede13502d.json", REV = "5474e40ea801faf16b19fe5ad9984d04f8606d0c", REPO = "JinPLu/msv-human-label";
+const DATA_FILE = "data-4ede13502d.json", REV = "/*REV*/", REPO = "JinPLu/msv-human-label";
 let ITEMS = [], PACKS = {};
 // 取数来源：本机服务只用本机；网页版在 jsDelivr 几个镜像与 GitHub Pages 之间先用 64 KB 探针赛跑，按先到先用排序，失败或卡住就换下一个。
 const LOCAL = ["127.0.0.1", "localhost"].includes(location.hostname);
@@ -86,17 +86,20 @@ let BASES = [...MIRRORS, ""];
 const baseName = b => b ? b.split("/")[2].split(".")[0] + " · jsDelivr" : (LOCAL ? "本机" : "GitHub Pages");
 async function raceBases(){
   if (BASES.length === 1) return;
-  const t0 = performance.now(), done = [];
-  await Promise.race([
-    Promise.allSettled(BASES.map(b => fetch(b + "probe.bin", {cache: "no-store"}).then(r => { if (!r.ok) throw 0; return r.arrayBuffer(); }).then(() => done.push(b)))),
-    new Promise(r => setTimeout(r, 8000))]);
-  BASES = [...done, ...BASES.filter(b => !done.includes(b))];
+  // 第一个探针到达后再等 0.5 秒收集其余；GitHub Pages 在国内常只有约 10 KB/s，只作最后的退路。
+  const done = []; let first;
+  const firstDone = new Promise(r => first = r);
+  BASES.forEach(b => fetch(b + "probe.bin", {cache: "no-store"}).then(r => { if (!r.ok) throw 0; return r.arrayBuffer(); })
+    .then(() => { done.push(b); first(); }).catch(() => {}));
+  await Promise.race([firstDone.then(() => new Promise(r => setTimeout(r, 500))), new Promise(r => setTimeout(r, 10000))]);
+  const mirrors = done.filter(b => b), rest = MIRRORS.filter(b => !mirrors.includes(b));
+  BASES = [...mirrors, ...rest, ""];
 }
 async function fetchFrom(path, onBody){
   for (const b of BASES){
-    try { const ctl = new AbortController(); let timer = setTimeout(() => ctl.abort(), 15000);
+    try { const ctl = new AbortController(); const wait = b ? 30000 : 60000; let timer = setTimeout(() => ctl.abort(), wait);
       const r = await fetch(b + path, {signal: ctl.signal}); if (!r.ok) throw new Error(r.status);
-      const out = await onBody(r, () => { clearTimeout(timer); timer = setTimeout(() => ctl.abort(), 15000); }, b);
+      const out = await onBody(r, () => { clearTimeout(timer); timer = setTimeout(() => ctl.abort(), wait); }, b);
       clearTimeout(timer); return out;
     } catch(e){}
   }
