@@ -74,11 +74,11 @@ body.finished .stage,body.finished .deck{display:none} body.finished .done{displ
 <footer class="deck" id="deck">
   <button class="key k1" id="k1"><kbd>1</kbd><span class="t"><b></b><span></span></span></button>
   <button class="key k2" id="k2"><kbd>2</kbd><span class="t"><b></b><span></span></span></button>
-  <button class="key k3" id="k3"><kbd>3</kbd><span class="t"><b>看不清</b><span>画面全黑、太糊，或找不到题里的人、物、地方</span></span></button>
+  <button class="key k3" id="k3"><kbd>3</kbd><span class="t"><b>看不清</b><span>画面全黑、太糊，完全无法判断</span></span></button>
 </footer>
 <div class="rule"><p id="rule"></p><p>按 <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 打标并跳到下一题 · <kbd>空格</kbd> 片段重播 · <kbd>←</kbd><kbd>→</kbd> 前后翻 · <kbd>[</kbd><kbd>]</kbd> 换组 · <kbd>⌫</kbd> 清除本题</p></div>
 <script>
-const DATA_FILE = "data-d6dc2f2608.json", REV = "9769df293a76b8883a70653b966961161109730e", REPO = "JinPLu/msv-human-label";
+const DATA_FILE = "data-d6dc2f2608.json", REV = "/*REV*/", REPO = "JinPLu/msv-human-label";
 let ITEMS = [], PACKS = {};
 // 取数来源：本机服务只用本机；网页版在 jsDelivr 几个镜像与 GitHub Pages 之间先用 64 KB 探针赛跑，按先到先用排序，失败或卡住就换下一个。
 const LOCAL = ["127.0.0.1", "localhost"].includes(location.hostname);
@@ -115,11 +115,11 @@ async function boot(){
 const SAME = {keys:[["是同一个","看得出是同一个"],["不是同一个","看得出换了"]]};
 const GROUPS = {
   character:{name:"人物",look:"镜头 A 与镜头 B 里的这个人是不是同一个人",...SAME,
-    rule:"上一行是镜头 A 的首、中、末帧，下一行是镜头 B 的。比脸、发型、体型；只有脸看不到时才用衣着。衣服一样但脸换了，算不是同一个。题里的人在任一镜头里找不到，按看不清。"},
+    rule:"上一行是镜头 A 的首、中、末帧，下一行是镜头 B 的。登记描述只用来认出问的是哪个人，不比画得像不像描述。比脸、发型、体型；只有脸看不到时才用衣着。衣服一样但脸换了，算不是同一个。题里的人在任一镜头里找不到，也算不是同一个（与自动判分一致）。"},
   object:{name:"物体",look:"两个镜头里的这件东西是不是同一件",...SAME,
-    rule:"比具体这件东西本身（形状、颜色、花纹、标志），不是同一类就算。东西在任一镜头里找不到，按看不清。"},
+    rule:"登记描述只用来认出问的是哪件东西：生成的样子和描述对不上（例如描述写纸巾、画面里托盘上是纸杯）不扣分，只比两个镜头里这件东西是不是同一件（形状、颜色、花纹、标志），同一类不算。任一镜头里找不到对应的东西，算不是同一个。"},
   scene:{name:"场景",look:"两个镜头是不是同一个具体地方",...SAME,
-    rule:"比墙、门窗、家具、建筑这类固定结构，机位不同也可以是同一个地方；只是同一类地方（都是厨房）不算。"},
+    rule:"比墙、门窗、家具、建筑这类固定结构，机位不同也可以是同一个地方；只是同一类地方（都是厨房）不算。登记描述只用来认出问的是哪个地方，不比像不像描述。"},
   event:{name:"事件",look:"这一镜里，题里说的动作有没有真的发生",keys:[["发生了","在这一镜里看得到动作做出来"],["没发生","没做、只摆姿势、做到一半，或只看到结果"]],
     rule:"只看这一镜。动作要在画面里做出来才算；开镜就已经是结果、只做到一半，都算没发生。谁做的不管：换了脸由人物题扣分。可以按空格重播，也可以看下面每秒 4 帧的帧条。"},
   state:{name:"状态",look:"这一镜里，题里说的状态是否成立",keys:[["成立","题里说的状态在这一镜里看得到"],["不成立","没有这个状态，或看不出来"]],
