@@ -26,6 +26,9 @@ body{margin:0;background:var(--surround);color:var(--ink);font-family:var(--font
 .tabs button span{font-family:var(--font-mono);font-size:12px}
 .tabs button.here{border-color:var(--focus);box-shadow:inset 0 0 0 1px var(--focus)}
 .tabs button.full span{color:var(--yes)}
+.tabs button em{font-style:normal;color:var(--no);font-weight:700}
+.notice{font-size:13px;color:var(--no);border-left:3px solid var(--no);padding:4px 10px;margin:0}
+.reel button[data-l=""]{background:repeating-linear-gradient(90deg,var(--rule) 0 3px,transparent 3px 5px)}
 .reel{display:flex;gap:1px;height:10px}
 .reel button{flex:1;border:0;padding:0;background:var(--rule);cursor:pointer;min-width:0}
 .reel button[data-l="1"]{background:var(--yes)} .reel button[data-l="2"]{background:var(--no)} .reel button[data-l="3"]{background:var(--unclear)} .reel button[data-l="4"]{background:var(--missing)}
@@ -69,6 +72,7 @@ body.finished .stage,body.finished .deck{display:none} body.finished .done{displ
 <header class="slate"><h1>多镜评测人评台</h1><span class="tag" id="pos"></span><span class="tag" id="whotag"></span><span class="save" id="load"></span><span class="save" id="save" style="margin-left:0">正在连接保存…</span><button class="io" id="export">导出标签</button><label class="io" for="importf">导入标签</label><input type="file" id="importf" accept="application/json" hidden></header>
 <section class="pick" id="pick" hidden><h2>你是哪一位标注人？</h2><p>两人各标一半，另有一小部分两人都标。选定后会记在这个浏览器里，链接里也会带上。</p><div class="deck"><button class="key k1" data-who="A"><kbd>A</kbd><span class="t"><b>标注人 A</b><span>按约定的分工</span></span></button><button class="key k2" data-who="B"><kbd>B</kbd><span class="t"><b>标注人 B</b><span>按约定的分工</span></span></button></div></section>
 <nav class="tabs" id="tabs" aria-label="六组题"></nav>
+<p class="notice" id="notice" hidden></p>
 <nav class="reel" id="reel" aria-label="本组进度，点一格跳到那一题"></nav>
 <main class="stage" id="stage" aria-live="polite"></main>
 <section class="done" id="done"><h2>六组都标完了</h2><p id="donecount"></p>
@@ -81,7 +85,7 @@ body.finished .stage,body.finished .deck{display:none} body.finished .done{displ
 </footer>
 <div class="rule"><p id="rule"></p><p>按 <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> 打标并跳到下一题 · <kbd>空格</kbd> 片段重播 · <kbd>←</kbd><kbd>→</kbd> 前后翻 · <kbd>[</kbd><kbd>]</kbd> 换组 · <kbd>⌫</kbd> 清除本题</p></div>
 <script>
-const DATA_FILE = "data-eb05c01c7a.json", REV = "249c46046379a9e4925680963896c328d488c5e6", REPO = "JinPLu/msv-human-label";
+const DATA_FILE = "data-eb05c01c7a.json", REV = "/*REV*/", REPO = "JinPLu/msv-human-label";
 let ITEMS = [], PACKS = {};
 // 取数来源：本机服务只用本机；网页版在 jsDelivr 几个镜像与 GitHub Pages 之间先用 64 KB 探针赛跑，按先到先用排序，失败或卡住就换下一个。
 const LOCAL = ["127.0.0.1", "localhost"].includes(location.hostname);
@@ -109,7 +113,15 @@ async function fetchFrom(path, onBody){
   }
   throw new Error("all sources failed: " + path);
 }
+// 页面外壳会被浏览器和 Pages 缓存约 10 分钟；打开时直接问本站当前版本，旧了就自动换成新页面，免得标注人对着旧题单。
+async function freshOrReload(){
+  try { const r = await fetch("version.json?t=" + Date.now(), {cache: "no-store"}); if (!r.ok) return;
+    const v = await r.json();
+    if (v.data && v.data !== DATA_FILE){ const u = new URL(location.href); if (u.searchParams.get("v") === v.data) return;
+      u.searchParams.set("v", v.data); location.replace(u.toString()); await new Promise(() => {}); } } catch(e){}
+}
 async function boot(){
+  await freshOrReload();
   $("load").textContent = "正在选最快的下载线路…";
   await raceBases();
   const d = await fetchFrom(DATA_FILE, async r => r.json());
@@ -208,7 +220,6 @@ async function init(){
     return;
   }
   LS = LS0 + "-" + WHO; ITEMS = ALL.filter(it => it.w.includes(WHO));
-  $("whotag").textContent = "标注人 " + WHO + " · 共 " + ITEMS.length + " 题";
   try { const r = await fetch("api/labels?who=" + WHO); if (r.ok && (r.headers.get("content-type") || "").includes("json")){ labels = await r.json(); server = true; } } catch(e){}
   if (!server) labels = loadLocal();
   $("save").textContent = server ? "自动保存到本机运行目录" : "自动存在这个浏览器里，标完点「导出标签」发回";
@@ -224,7 +235,11 @@ async function put(tag, label){
 }
 function tabs(){
   $("tabs").innerHTML = GORDER.map(g => { const a = inG(g), d = a.filter(it => labels[it.tag]).length;
-    return `<button class="${g===group?'here':''} ${d===a.length?'full':''}" data-g="${g}"><b>${GROUPS[g].name}</b><span>${d} / ${a.length}</span></button>`; }).join("");
+    return `<button class="${g===group?'here':''} ${d===a.length?'full':''}" data-g="${g}"><b>${GROUPS[g].name}</b><span>${d===a.length ? `✓ ${a.length}` : `<em>未标 ${a.length-d}</em> · 已标 ${d} / ${a.length}`}</span></button>`; }).join("");
+  const D = ITEMS.filter(it => labels[it.tag]).length, gone = Object.keys(labels).filter(t => !ITEMS.some(it => it.tag === t)).length;
+  $("whotag").textContent = `标注人 ${WHO} · 已标 ${D} / ${ITEMS.length}` + (D < ITEMS.length ? ` · 未标 ${ITEMS.length - D}` : " · 全部标完");
+  $("notice").hidden = !gone;
+  $("notice").textContent = `有 ${gone} 个你标过的旧题号已作废（题目调整，或画面重取后换了新题号），不再计入；新题号显示为「未标」，请补标。`;
   $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => { group = b.dataset.g; idx = Math.max(0, inG(group).findIndex(it => !labels[it.tag])); render(); });
 }
 function reel(){
