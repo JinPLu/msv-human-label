@@ -33,6 +33,7 @@ body{margin:0;background:var(--surround);color:var(--ink);font-family:var(--font
 .stage{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;overflow:auto}
 .ask .look{font-size:15px;font-weight:600;color:var(--yes)}
 .ask .q{font-size:20px;font-weight:700;line-height:1.35;margin:2px 0}
+.ask .en{font-size:12px;color:var(--ink-dim);font-weight:400;margin:0 0 2px}
 .ask .ent{color:var(--ink-dim);margin:0} .ask .ent b{color:var(--ink);font-weight:500}
 .rowlab{font-size:12px;color:var(--ink-dim);margin:4px 0 2px}
 .frames{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-width:min(1200px,calc((100vh - 330px) / 2 * 3 * 1.733 + 12px))}
@@ -77,7 +78,7 @@ body.finished .stage,body.finished .deck{display:none} body.finished .done{displ
 </footer>
 <div class="rule"><p id="rule"></p><p>按 <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 打标并跳到下一题 · <kbd>空格</kbd> 片段重播 · <kbd>←</kbd><kbd>→</kbd> 前后翻 · <kbd>[</kbd><kbd>]</kbd> 换组 · <kbd>⌫</kbd> 清除本题</p></div>
 <script>
-const DATA_FILE = "data-4ede13502d.json", REV = "f5ce928fb1a6145220d183b08ef161e9fc2d1ede", REPO = "JinPLu/msv-human-label";
+const DATA_FILE = "data-d6dc2f2608.json", REV = "/*REV*/", REPO = "JinPLu/msv-human-label";
 let ITEMS = [], PACKS = {};
 // 取数来源：本机服务只用本机；网页版在 jsDelivr 几个镜像与 GitHub Pages 之间先用 64 KB 探针赛跑，按先到先用排序，失败或卡住就换下一个。
 const LOCAL = ["127.0.0.1", "localhost"].includes(location.hostname);
@@ -138,6 +139,7 @@ function pickWho(){
   if (!["A","B"].includes(w)) { try { w = localStorage.getItem(LS0 + "-who") || ""; } catch(e){} }
   return ["A","B"].includes(w) ? w : null;
 }
+const zhId = e => e.replace(/^Character /, "人物").replace(/^Object /, "物体").replace(/^Location /, "地点");
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const URLS = {}, READY = {}, LOAD = {};
 const M = (k, s) => URLS[k + s] || "";
@@ -233,8 +235,9 @@ function frames(k, names, cls){
 function stage(it){
   const G = GROUPS[it.g];
   let h = `<div class="ask"><div class="look">${esc(G.look)}</div>`;
-  if (it.q) h += `<div class="q">${esc(it.q)}</div>`;
-  if (it.ents) h += it.ents.map(([e, d]) => `<p class="ent"><b>${esc(e)}</b>：${esc(d)}</p>`).join("");
+  // 中文在上、原文小字在下：中文帮助快读，原文用来核对。
+  if (it.q) h += `<div class="q">${esc(it.qz || it.q)}</div>` + (it.qz ? `<div class="en">${esc(it.q)}</div>` : "");
+  if (it.ents) h += it.ents.map(([e, d, dz]) => `<p class="ent"><b>${esc(zhId(e))}</b>：${esc(dz || d)}${dz ? ` <span class="en">${esc(d)}</span>` : ""}</p>`).join("");
   h += `</div>`;
   if (["character","object","scene"].includes(it.g)){
     h += `<div class="rowlab">镜头 A</div>` + frames(it.k, ["A 首帧","A 中帧","A 末帧"]);
