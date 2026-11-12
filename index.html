@@ -87,7 +87,7 @@ body.finished .stage,body.finished .deck{display:none} body.finished .done{displ
 </footer>
 <div class="rule"><p id="rule"></p><p>按 <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> 打标并跳到下一题 · <kbd>空格</kbd> 片段重播 · <kbd>←</kbd><kbd>→</kbd> 前后翻 · <kbd>[</kbd><kbd>]</kbd> 换组 · <kbd>⌫</kbd> 清除本题</p></div>
 <script>
-const DATA_FILE = "data-c695433759.json", REV = "df5dc546dd363aa9c01545364317b77a84a2e141", REPO = "JinPLu/msv-human-label";
+const DATA_FILE = "data-bf1f28034b.json", REV = "/*REV*/", REPO = "JinPLu/msv-human-label";
 let ITEMS = [], PACKS = {};
 // 取数来源：本机服务只用本机；网页版在 jsDelivr 几个镜像与 GitHub Pages 之间先用 64 KB 探针赛跑，按先到先用排序，失败或卡住就换下一个。
 const LOCAL = ["127.0.0.1", "localhost"].includes(location.hostname);
@@ -144,7 +144,7 @@ const GROUPS = {
   setup:{name:"机位",look:"镜头 B 是不是换了一个新机位",keys:[["新机位","相机明显挪动、转向或推拉，固定背景的位置或大小变了，或换了地方"],["同机位或没切开","固定背景基本在原位、原大小；或两镜之间根本没切"]],
     rule:"只看墙、门窗、建筑、地平线这类固定结构在画面里的位置和大小。人走近走远、换了个人、小物件或光线变化都不算新机位；轻微摇摄或小幅改构图也算同机位。下面若有片段，是切点前后各 1 秒，用来看是不是真的切了。"},
 };
-const GORDER = ["character","scene","state","setup"];
+const GORDER = ["character","object","scene","state","setup"];
 const LS0 = "human-alignment-v13-20261111";
 let labels = {}, group = "character", idx = 0, server = false, WHO = null, LS = LS0;
 let ALL = [];
@@ -241,7 +241,7 @@ function tabs(){
   const D = ITEMS.filter(it => labels[it.tag]).length, gone = Object.keys(labels).filter(t => !ITEMS.some(it => it.tag === t)).length;
   $("whotag").textContent = `标注人 ${WHO} · 已标 ${D} / ${ITEMS.length}` + (D < ITEMS.length ? ` · 未标 ${ITEMS.length - D}` : " · 全部标完");
   $("notice").hidden = !gone;
-  $("notice").textContent = `有 ${gone} 个你标过的题号这一轮不再出现（物体、事件两组已移出，或题目调整），不用管；新题号显示为「未标」，请补标。`;
+  $("notice").textContent = `有 ${gone} 个你标过的题号这一轮不再出现（事件组已移出，或题目调整），不用管；新题号显示为「未标」，请补标。`;
   $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => { group = b.dataset.g; idx = Math.max(0, inG(group).findIndex(it => !labels[it.tag])); render(); });
 }
 function reel(){
