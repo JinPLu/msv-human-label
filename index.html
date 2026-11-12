@@ -33,7 +33,18 @@ body{margin:0;background:var(--surround);color:var(--ink);font-family:var(--font
 .reel button{flex:1;border:0;padding:0;background:var(--rule);cursor:pointer;min-width:0}
 .reel button[data-l="1"]{background:var(--yes)} .reel button[data-l="2"]{background:var(--no)} .reel button[data-l="3"]{background:var(--unclear)} .reel button[data-l="4"]{background:var(--missing)}
 .reel button.here{box-shadow:inset 0 -3px 0 var(--focus)}
-.stage{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;overflow:auto}
+.work{flex:1;min-height:0;display:flex;gap:12px}
+.stage{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;gap:10px;overflow:auto}
+/* 题单：本组每题一行，标签号＋当前标签；可只看未标或已标，点一行跳过去。窄屏收起，用右上「题单」按钮打开。 */
+.list{flex:0 0 230px;display:flex;flex-direction:column;gap:6px;min-height:0;background:var(--panel);border:1px solid var(--rule);border-radius:4px;padding:8px}
+.lf{display:flex;gap:4px} .lf button{flex:1;font:inherit;font-size:12px;color:var(--ink-dim);background:var(--surround);border:1px solid var(--rule);border-radius:3px;padding:2px 0;cursor:pointer}
+.lf button.on{color:var(--ink);border-color:var(--focus)}
+.lr{overflow:auto;display:flex;flex-direction:column;gap:1px;min-height:0}
+.lr button{display:flex;justify-content:space-between;gap:8px;font:inherit;font-size:13px;text-align:left;color:var(--ink);background:transparent;border:0;border-radius:3px;padding:3px 6px;cursor:pointer}
+.lr button:hover{background:var(--surround)} .lr button.here{background:var(--surround);box-shadow:inset 3px 0 0 var(--focus)}
+.lr .t{font-family:var(--font-mono)} .lr .v{font-size:12px} .lr .v.l1{color:var(--yes)} .lr .v.l2{color:var(--no)} .lr .v.l3{color:var(--unclear)} .lr .v.l4{color:var(--missing)} .lr .v.none{color:var(--no);font-weight:700}
+.listbtn{display:none}
+@media (max-width:900px){.list{display:none} body.showlist .list{display:flex;position:fixed;right:max(16px,env(safe-area-inset-right,0px));top:120px;bottom:120px;width:240px;z-index:5;box-shadow:0 8px 24px #0008} .listbtn{display:inline-block}}
 .ask .look{font-size:15px;font-weight:600;color:var(--yes)}
 .ask .q{font-size:20px;font-weight:700;line-height:1.35;margin:2px 0}
 .ask .en{font-size:12px;color:var(--ink-dim);font-weight:400;margin:0 0 2px}
@@ -71,12 +82,13 @@ body.picking .tabs,body.picking .reel,body.picking .stage,body.picking #deck,bod
 .done h2{font-size:26px;margin:0}
 body.finished .stage,body.finished .deck{display:none} body.finished .done{display:flex}
 </style></head><body>
-<header class="slate"><h1>多镜评测人评台</h1><span class="tag" id="pos"></span><span class="tag" id="whotag"></span><span class="save" id="load"></span><span class="save" id="save" style="margin-left:0">正在连接保存…</span><button class="io" id="export">导出标签</button><label class="io" for="importf">导入标签</label><input type="file" id="importf" accept="application/json" hidden></header>
+<header class="slate"><h1>多镜评测人评台</h1><span class="tag" id="pos"></span><span class="tag" id="whotag"></span><button class="io listbtn" id="listbtn">题单</button><span class="save" id="load"></span><span class="save" id="save" style="margin-left:0">正在连接保存…</span><button class="io" id="export">导出标签</button><label class="io" for="importf">导入标签</label><input type="file" id="importf" accept="application/json" hidden></header>
 <section class="pick" id="pick" hidden><h2>你是哪一位标注人？</h2><p>两人各标一半，另有一小部分两人都标。选定后会记在这个浏览器里，链接里也会带上。</p><div class="deck"><button class="key k1" data-who="A"><kbd>A</kbd><span class="t"><b>标注人 A</b><span>按约定的分工</span></span></button><button class="key k2" data-who="B"><kbd>B</kbd><span class="t"><b>标注人 B</b><span>按约定的分工</span></span></button></div></section>
 <nav class="tabs" id="tabs" aria-label="六组题"></nav>
 <p class="notice" id="notice" hidden></p>
 <nav class="reel" id="reel" aria-label="本组进度，点一格跳到那一题"></nav>
-<main class="stage" id="stage" aria-live="polite"></main>
+<div class="work"><main class="stage" id="stage" aria-live="polite"></main>
+<aside class="list" id="list" aria-label="本组题单，点一题跳过去"><div class="lf" id="lf"></div><div class="lr" id="lr"></div></aside></div>
 <section class="done" id="done"><h2>六组都标完了</h2><p id="donecount"></p>
 <p>本机服务模式下标签已存进运行目录的 labels/labels-&lt;标注人&gt;.json；网页模式下请点右上「导出标签」，把下载的 JSON 文件发回来。要改哪一题，点上方那一组和进度条那一格，或按 <kbd>←</kbd> 回去重标。</p></section>
 <footer class="deck" id="deck">
@@ -87,7 +99,7 @@ body.finished .stage,body.finished .deck{display:none} body.finished .done{displ
 </footer>
 <div class="rule"><p id="rule"></p><p>按 <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> 打标并跳到下一题 · <kbd>空格</kbd> 片段重播 · <kbd>←</kbd><kbd>→</kbd> 前后翻 · <kbd>[</kbd><kbd>]</kbd> 换组 · <kbd>⌫</kbd> 清除本题</p></div>
 <script>
-const DATA_FILE = "data-513a73c6be.json", REV = "7aa9e474966ddb73061fe3676b78441641dc9dca", REPO = "JinPLu/msv-human-label";
+const DATA_FILE = "data-513a73c6be.json", REV = "/*REV*/", REPO = "JinPLu/msv-human-label";
 let ITEMS = [], PACKS = {};
 // 取数来源：本机服务只用本机；网页版在 jsDelivr 几个镜像与 GitHub Pages 之间先用 64 KB 探针赛跑，按先到先用排序，失败或卡住就换下一个。
 const LOCAL = ["127.0.0.1", "localhost"].includes(location.hostname);
@@ -244,6 +256,19 @@ function tabs(){
   $("notice").textContent = `有 ${gone} 个你标过的题号这一轮不再出现（事件组已移出，或题目调整），不用管；新题号显示为「未标」，请补标。`;
   $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => { group = b.dataset.g; idx = Math.max(0, inG(group).findIndex(it => !labels[it.tag])); render(); });
 }
+let listFilter = "all";
+const LNAME = {"1": g => GROUPS[g].keys[0][0], "2": g => GROUPS[g].keys[1][0], "3": () => "看不清", "4": () => "没生成出来"};
+function list(){
+  if (group === "done") return;
+  const a = inG(group);
+  $("lf").innerHTML = [["all","全部"],["todo","未标"],["done","已标"]].map(([k, n]) => `<button class="${listFilter===k?'on':''}" data-f="${k}">${n}</button>`).join("");
+  $("lf").querySelectorAll("button").forEach(b => b.onclick = () => { listFilter = b.dataset.f; list(); });
+  $("lr").innerHTML = a.map((it, i) => {
+    const l = labels[it.tag]; if ((listFilter === "todo" && l) || (listFilter === "done" && !l)) return "";
+    return `<button class="${i===idx?'here':''}" data-i="${i}"><span class="t">${it.tag}</span><span class="v ${l ? 'l'+l.label : 'none'}">${l ? LNAME[l.label](group) : '未标'}</span></button>`; }).join("");
+  $("lr").querySelectorAll("button").forEach(b => b.onclick = () => { idx = +b.dataset.i; document.body.classList.remove("showlist"); render(); });
+  const cur = $("lr").querySelector("button.here"); if (cur) cur.scrollIntoView({block: "nearest"});
+}
 function reel(){
   const a = inG(group);
   $("reel").innerHTML = a.map((it, i) => `<button class="${i===idx?'here':''}" data-l="${labels[it.tag] ? labels[it.tag].label : ''}" data-i="${i}" title="${it.tag}"></button>`).join("");
@@ -288,7 +313,7 @@ function stage(it){
 function render(){
   const a = inG(group);
   const allDone = ITEMS.every(it => labels[it.tag]);
-  tabs(); reel();
+  tabs(); reel(); list();
   if (!a.length) return;
   idx = Math.min(Math.max(idx, 0), a.length - 1);
   const it = a[idx], G = GROUPS[group];
@@ -316,6 +341,7 @@ async function mark(n){
 }
 [1,2,3,4].forEach(n => $("k"+n).onclick = () => mark(n));
 document.addEventListener("keydown", e => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s"){ e.preventDefault(); saveNow(); return; }
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   if (["1","2","3"].includes(e.key) || (e.key === "4" && group !== "setup")){ e.preventDefault(); mark(+e.key); }
   else if (e.key === "ArrowRight"){ idx++; render(); }
@@ -324,6 +350,8 @@ document.addEventListener("keydown", e => {
   else if (e.key === "[" || e.key === "]"){ const i = GORDER.indexOf(group === "done" ? "setup" : group); group = GORDER[(i + (e.key === "]" ? 1 : GORDER.length - 1)) % GORDER.length]; document.body.classList.remove("finished"); idx = Math.max(0, inG(group).findIndex(it => !labels[it.tag])); render(); }
   else if (e.key === "Backspace"){ e.preventDefault(); const it = inG(group)[idx]; if (it){ put(it.tag, null).then(render); } }
 });
+$("listbtn").onclick = () => document.body.classList.toggle("showlist");
+function saveNow(){ saveLocal(); const t = new Date().toTimeString().slice(0, 8); $("save").textContent = `已保存（${t}）`; }
 $("export").onclick = () => {
   const blob = new Blob([JSON.stringify({who: WHO, exported_at: new Date().toISOString(), labels}, null, 1)], {type: "application/json"});
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `labels-${WHO}.json`; document.body.appendChild(a); a.click(); a.remove();
