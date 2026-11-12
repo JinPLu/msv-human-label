@@ -85,7 +85,7 @@ body.finished .stage,body.finished .deck{display:none} body.finished .done{displ
 </footer>
 <div class="rule"><p id="rule"></p><p>按 <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> 打标并跳到下一题 · <kbd>空格</kbd> 片段重播 · <kbd>←</kbd><kbd>→</kbd> 前后翻 · <kbd>[</kbd><kbd>]</kbd> 换组 · <kbd>⌫</kbd> 清除本题</p></div>
 <script>
-const DATA_FILE = "data-a020b080cd.json", REV = "8ef9266c992dd8083394632a2bd0af1afda96c20", REPO = "JinPLu/msv-human-label";
+const DATA_FILE = "data-c695433759.json", REV = "/*REV*/", REPO = "JinPLu/msv-human-label";
 let ITEMS = [], PACKS = {};
 // 取数来源：本机服务只用本机；网页版在 jsDelivr 几个镜像与 GitHub Pages 之间先用 64 KB 探针赛跑，按先到先用排序，失败或卡住就换下一个。
 const LOCAL = ["127.0.0.1", "localhost"].includes(location.hostname);
@@ -138,11 +138,11 @@ const GROUPS = {
   event:{name:"事件",look:"这一镜里，题里说的动作有没有真的发生",keys:[["发生了","在这一镜里看得到动作做出来"],["没发生","没做、只摆姿势、做到一半，或只看到结果"]],
     rule:"只看这一镜。动作要在画面里做出来才算；开镜就已经是结果、只做到一半，都算没发生。谁做的不管：换了脸由人物题扣分。可以按空格重播，也可以看下面每秒 4 帧的帧条。做动作的人或东西在这一镜里根本没画出来，按 4。"},
   state:{name:"状态",look:"这一镜里，题里说的状态是否成立",keys:[["成立","题里说的状态在这一镜里看得到"],["不成立","没有这个状态，或看不出来"]],
-    rule:"带绿框的帧条是这一镜最后约 1 秒：问的是这一镜结束时的样子。右边有参考图的是回访题：参考图是之前发生变化那一镜的末帧，只用来认出是哪个人、哪件东西，判断只看这一镜。题里的人或东西在这一镜里根本没画出来，按 4。"},
+    rule:"两种题。建立题（帧条末尾带绿框）：只看这一镜最后约 1 秒，中途出现过、镜末已不成立的，按不成立。回访题（右边有参考图）：参考图是之前发生变化那一镜的末帧，只用来认出是哪个人、哪件东西；判断这一镜里它出现时状态还在不在。登记描述只用来认出是谁、是哪件，长相不像不扣分。题里的人或东西在这一镜里根本没画出来，按 4。"},
   setup:{name:"机位",look:"镜头 B 是不是换了一个新机位",keys:[["新机位","相机明显挪动、转向或推拉，固定背景的位置或大小变了，或换了地方"],["同机位或没切开","固定背景基本在原位、原大小；或两镜之间根本没切"]],
     rule:"只看墙、门窗、建筑、地平线这类固定结构在画面里的位置和大小。人走近走远、换了个人、小物件或光线变化都不算新机位；轻微摇摄或小幅改构图也算同机位。下面若有片段，是切点前后各 1 秒，用来看是不是真的切了。"},
 };
-const GORDER = ["character","object","scene","event","state","setup"];
+const GORDER = ["character","scene","state","setup"];
 const LS0 = "human-alignment-v13-20261111";
 let labels = {}, group = "character", idx = 0, server = false, WHO = null, LS = LS0;
 let ALL = [];
@@ -239,7 +239,7 @@ function tabs(){
   const D = ITEMS.filter(it => labels[it.tag]).length, gone = Object.keys(labels).filter(t => !ITEMS.some(it => it.tag === t)).length;
   $("whotag").textContent = `标注人 ${WHO} · 已标 ${D} / ${ITEMS.length}` + (D < ITEMS.length ? ` · 未标 ${ITEMS.length - D}` : " · 全部标完");
   $("notice").hidden = !gone;
-  $("notice").textContent = `有 ${gone} 个你标过的旧题号已作废（题目调整，或画面重取后换了新题号），不再计入；新题号显示为「未标」，请补标。`;
+  $("notice").textContent = `有 ${gone} 个你标过的题号这一轮不再出现（物体、事件两组已移出，或题目调整），不用管；新题号显示为「未标」，请补标。`;
   $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => { group = b.dataset.g; idx = Math.max(0, inG(group).findIndex(it => !labels[it.tag])); render(); });
 }
 function reel(){
