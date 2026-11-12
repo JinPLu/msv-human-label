@@ -99,7 +99,7 @@ body.finished .stage,body.finished .deck{display:none} body.finished .done{displ
 </footer>
 <div class="rule"><p id="rule"></p><p>按 <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> 打标并跳到下一题 · <kbd>空格</kbd> 片段重播 · <kbd>←</kbd><kbd>→</kbd> 前后翻 · <kbd>[</kbd><kbd>]</kbd> 换组 · <kbd>⌫</kbd> 清除本题</p></div>
 <script>
-const DATA_FILE = "data-513a73c6be.json", REV = "d3f3e2cbbe88b478cdded89b1db9a2a91c4d337b", REPO = "JinPLu/msv-human-label";
+const DATA_FILE = "data-513a73c6be.json", REV = "/*REV*/", REPO = "JinPLu/msv-human-label";
 let ITEMS = [], PACKS = {};
 // 取数来源：本机服务只用本机；网页版在 jsDelivr 几个镜像与 GitHub Pages 之间先用 64 KB 探针赛跑，按先到先用排序，失败或卡住就换下一个。
 const LOCAL = ["127.0.0.1", "localhost"].includes(location.hostname);
@@ -298,7 +298,8 @@ function stage(it){
         h += `<div class="f" style="background-image:url('${M(it.k, '_strip')}');background-size:${it.n*100}% 100%;background-position:${it.n>1? (i/(it.n-1))*100 : 0}% 0"></div>`;
       h += `</div><div class="rowlab">整镜视频与帧条</div>`;
     }
-    h += `<div class="screen"><video id="vid" src="${M(it.k, '.mp4')}" autoplay muted loop playsinline controls></video>`;
+    // 建立题问镜末：视频播完停在最后一帧，不循环，免得结尾一闪就跳回开头；空格重播。
+    h += `<div class="screen"><video id="vid" src="${M(it.k, '.mp4')}" autoplay muted ${it.end ? '' : 'loop'} playsinline controls></video>`;
     if (it.ref) h += `<figure style="margin:0"><img class="ref" src="${M(it.k, '_f0')}" alt="参考"><figcaption>参考：变化那一镜的末帧</figcaption></figure>`;
     h += `</div>`;
     h += `<div class="strip">`;
